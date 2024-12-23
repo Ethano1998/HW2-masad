@@ -15,7 +15,32 @@ from Business.OrderDish import OrderDish
 
 
 def create_tables() -> None:
-    # TODO: implement
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute("CREATE TABLE Customer(cust_id INTEGER NOT NULL , full_name TEXT NOT NULL,"
+                     " age INTEGER NOT NULL, phone TEXT NOT NULL,"
+                     "CHECK (cust_id > 0), CHECK ( age >= 18 ), CHECK ( age <= 120),"
+                     "CHECK ( LENGHT(phone) == 10 ), PRIMARY KEY(cust_id))")
+        conn.execute("CREATE TABLE Order(order_id INTEGER NOT NULL , date TIMESTAMP(0) NOT NULL,"
+                     "delivery_fee DECIMAL NOT NULL, delivery_adress TEXT NOT NULL,"
+                     "CHECK (order_id > 0), CHECK ( delivery_fee >= 0 ),"
+                     "CHECK ( LENGHT(delivery_adress) >= 5 ), PRIMARY KEY(order_id))")
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
     pass
 
 
