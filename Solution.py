@@ -18,7 +18,7 @@ def create_tables() -> None:
     conn = None
     try:
         conn = Connector.DBConnector()
-        conn.execute("CREATE TABLE Customer(cust_id INTEGER NOT NULL , full_name TEXT NOT NULL,"
+        conn.execute("CREATE TABLE Customer(cust_id INTEGER NOT NULL, full_name TEXT NOT NULL,"
                      " age INTEGER NOT NULL, phone TEXT NOT NULL,"
                      "CHECK (cust_id > 0), CHECK ( age >= 18 ), CHECK ( age <= 120),"
                      "CHECK ( LENGHT(phone) == 10 ), PRIMARY KEY(cust_id))")
@@ -26,6 +26,11 @@ def create_tables() -> None:
                      "delivery_fee DECIMAL NOT NULL, delivery_adress TEXT NOT NULL,"
                      "CHECK (order_id > 0), CHECK ( delivery_fee >= 0 ),"
                      "CHECK ( LENGHT(delivery_adress) >= 5 ), PRIMARY KEY(order_id))")
+        conn.execute("CREATE TABLE Customer_rated_dish (cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL,"
+                     "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5),"
+                     "FOREIGN KEY (cust_id) REFERENCES Customer(cust_id),"
+                     "FOREIGN KEY (dish_id) REFERENCES Dish(dish_id),"
+                     "PRIMARY KEY(cust_id, dish_id))")
     except DatabaseException.ConnectionInvalid as e:
         print(e)
     except DatabaseException.NOT_NULL_VIOLATION as e:
