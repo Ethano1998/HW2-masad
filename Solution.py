@@ -44,6 +44,11 @@ def create_tables() -> None:
                      "(SELECT co.cust_id FROM CustomerPlaceOrder co WHERE co.order_id = od.order_id) AS cust_id"
                      "FROM OrderContainDish od"
                      "GROUP BY od.order_id")
+        conn.execute("CREATE VIEW RatingDish AS"
+                     "SELECT dish_id,"
+                     "AVG(rating) AS avg_rating"
+                     "FROM Customer_rated_dish"
+                     "GROUP BY dish_id")
 
         conn.execute("CREATE TABLE Customer_rated_dish (cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL,"
                      "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5),"
