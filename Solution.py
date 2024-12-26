@@ -26,6 +26,25 @@ def create_tables() -> None:
                      "delivery_fee DECIMAL NOT NULL, delivery_adress TEXT NOT NULL,"
                      "CHECK (order_id > 0), CHECK ( delivery_fee >= 0 ),"
                      "CHECK ( LENGHT(delivery_adress) >= 5 ), PRIMARY KEY(order_id))")
+        conn.execute("CREATE TABLE Dish(dish_id INTEGER NOT NULL , name TEXT NOT NULL,"
+                     "price DECIMAL NOT NULL, is_active BOOLEAN NOT NULL,"
+                     "CHECK (dish_id > 0), CHECK ( price > 0 ),CHECK (LENGTH(name) >= 4), PRIMARY KEY(dish_id))")
+        conn.execute("CREATE TABLE CustomerPlaceOrder(cust_id INTEGER,order_id INTEGER,"
+                     "PRIMARY KEY(order_id),"
+                     "FOREIGN KEY (cust_id) REFERENCES Customer(cust_id) ON DELETE SET NULL,"
+                     "FOREIGN KEY (order_id) REFERENCES Order(order_id) ON DELETE CASCADE,)")
+        conn.execute("CREATE TABLE OrderContainDish(order_id INTEGER,dish_id INTEGER,amount INTEGER NOT NULL,price DECIMAL NOT NULL,"
+                     "PRIMARY KEY(order_id, dish_id),"
+                     "FOREIGN KEY (order_id) REFERENCES Order(order_id) ON DELETE CASCADE,"
+                     "FOREIGN KEY (dish_id) REFERENCES Dish(dish_id),"
+                     "CHECK ( amount >= 0 ))")
+        conn.execute("CREATE VIEW OrderTotalPrice AS"
+                     "SELECT od.order_id,"
+                     "SUM(od.amount * od.price) + (SELECT o.delivery_fee FROM Order o WHERE o.order_id = od.order_id)) AS total_price,"
+                     "(SELECT co.cust_id FROM CustomerPlaceOrder co WHERE co.order_id = od.order_id) AS cust_id"
+                     "FROM OrderContainDish od"
+                     "GROUP BY od.order_id")
+
     except DatabaseException.ConnectionInvalid as e:
         print(e)
     except DatabaseException.NOT_NULL_VIOLATION as e:
