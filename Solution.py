@@ -45,6 +45,11 @@ def create_tables() -> None:
                      "FROM OrderContainDish od"
                      "GROUP BY od.order_id")
 
+        conn.execute("CREATE TABLE Customer_rated_dish (cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL,"
+                     "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5),"
+                     "FOREIGN KEY (cust_id) REFERENCES Customer(cust_id),"
+                     "FOREIGN KEY (dish_id) REFERENCES Dish(dish_id),"
+                     "PRIMARY KEY(cust_id, dish_id))")
     except DatabaseException.ConnectionInvalid as e:
         print(e)
     except DatabaseException.NOT_NULL_VIOLATION as e:
