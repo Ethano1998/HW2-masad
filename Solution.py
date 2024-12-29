@@ -79,13 +79,61 @@ def create_tables() -> None:
 
 
 def clear_tables() -> None:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute("DELETE FROM CustomerRatedDish")
+        conn.execute("DELETE FROM OrderContainsDish")
+        conn.execute("DELETE FROM CustomerPlacesOrder")
+        conn.execute("DELETE FROM Dishes")
+        conn.execute("DELETE FROM Orders")
+        conn.execute("DELETE FROM Customers")
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
 
 
 def drop_tables() -> None:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute("DROP VIEW IF EXISTS OrderTotalPrice")
+        conn.execute("DROP VIEW IF EXISTS RatingDish")
+        conn.execute("DROP VIEW IF EXISTS CustomerOrderedDish")
+        conn.execute("DROP VIEW IF EXISTS AverageProfitPerOrderPerPrice")
+        conn.execute("DROP TABLE IF EXISTS CustomerRatedDish CASCADE")
+        conn.execute("DROP TABLE IF EXISTS OrderContainsDish CASCADE")
+        conn.execute("DROP TABLE IF EXISTS CustomerPlacesOrder CASCADE")
+        conn.execute("DROP TABLE IF EXISTS Dishes CASCADE")
+        conn.execute("DROP TABLE IF EXISTS Orders CASCADE")
+        conn.execute("DROP TABLE IF EXISTS Customers CASCADE")
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
 
 
 # CRUD API
@@ -176,13 +224,44 @@ def add_order(order: Order) -> ReturnValue:
 
 
 def get_order(order_id: int) -> Order:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, result = conn.execute("SELECT * FROM Orders WHERE order_id = {order_id}").format(
+            order_id=order_id)
+        if rows_effected == 1:
+            row = result.rows[0]
+            order = Order(row[0], row[1], row[2], row[3])
+        else:
+            order = BadOrder()
+    except Exception:
+        return BadOrder()
+    finally:
+        conn.close()
+    return order
 
 
 def delete_order(order_id: int) -> ReturnValue:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("DELETE FROM Orders WHERE order_id = {order_id}").format(order_id=order_id)
+        rows_effected, _ = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return ReturnValue.ERROR
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return ReturnValue.NOT_EXISTS
+    except DatabaseException.CHECK_VIOLATION:
+        return ReturnValue.NOT_EXISTS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return ReturnValue.NOT_EXISTS
+    except Exception:
+        return ReturnValue.NOT_EXISTS
+    finally:
+        conn.close()
+    return ReturnValue.OK
 
 
 def add_dish(dish: Dish) -> ReturnValue:
