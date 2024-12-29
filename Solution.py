@@ -142,11 +142,12 @@ def add_customer(customer: Customer) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) "
-                     "VALUES({cust_id}, {full_name}, {age}, {phone})").format(cust_id=customer.get_cust_id(),
-                                                                              full_name=customer.get_full_name(),
-                                                                              age=customer.get_age(),
-                                                                              phone=customer.get_phone())
+        query= sql.SQL("INSERT INTO Customers(cust_id, full_name, age, phone) "
+                       "VALUES ({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
+                                                                                                      full_name=sql.Literal(customer.get_full_name()),
+                                                                                                      age=sql.Literal(customer.get_age()),
+                                                                                                      phone=sql.Literal(customer.get_phone()))
+        rows_effected, _ = conn.execute(query)
     except DatabaseException.ConnectionInvalid as e:
         print(e)
         return ReturnValue.ERROR
@@ -172,12 +173,26 @@ def get_customer(customer_id: int) -> Customer:
     try:
         conn = Connector.DBConnector()
         rows_effected, result = conn.execute("SELECT * FROM Customers WHERE cust_id = {customer_id}").format(customer_id=customer_id)
+
         if rows_effected == 1:
             row = result.rows[0]
             customer = Customer(row[0], row[1], row[2], row[3])
         else :
             customer = BadCustomer()
-    except Exception:
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+        return BadCustomer()
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+        return BadCustomer()
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+        return BadCustomer()
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+        return BadCustomer()
+    except Exception as e:
+        print(e)
         return BadCustomer()
     finally:
         conn.close()
