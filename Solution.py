@@ -17,49 +17,49 @@ def create_tables() -> None:
     conn = None
     try:
         conn = Connector.DBConnector()
-        conn.execute("CREATE TABLE Customers(cust_id INTEGER NOT NULL , full_name TEXT NOT NULL,"
-                     " age INTEGER NOT NULL, phone TEXT NOT NULL,"
-                     "CHECK (cust_id > 0), CHECK ( age >= 18 ), CHECK ( age <= 120),"
+        conn.execute("CREATE TABLE Customers(cust_id INTEGER NOT NULL , full_name TEXT NOT NULL, "
+                     " age INTEGER NOT NULL, phone TEXT NOT NULL, "
+                     "CHECK (cust_id > 0), CHECK ( age >= 18 ), CHECK ( age <= 120), "
                      "CHECK ( LENGTH(phone) = 10 ), PRIMARY KEY(cust_id))")
-        conn.execute("CREATE TABLE Orders(order_id INTEGER NOT NULL , date TIMESTAMP(0) NOT NULL,"
-                     "delivery_fee DECIMAL NOT NULL, delivery_adress TEXT NOT NULL,"
-                     "CHECK (order_id > 0), CHECK ( delivery_fee >= 0 ),"
+        conn.execute("CREATE TABLE Orders(order_id INTEGER NOT NULL , date TIMESTAMP(0) NOT NULL, "
+                     "delivery_fee DECIMAL NOT NULL, delivery_adress TEXT NOT NULL, "
+                     "CHECK (order_id > 0), CHECK ( delivery_fee >= 0 ), "
                      "CHECK ( LENGTH(delivery_adress) >= 5 ), PRIMARY KEY(order_id))")
-        conn.execute("CREATE TABLE Dishes(dish_id INTEGER NOT NULL , name TEXT NOT NULL,"
-                     "price DECIMAL NOT NULL, is_active BOOLEAN NOT NULL,"
+        conn.execute("CREATE TABLE Dishes(dish_id INTEGER NOT NULL , name TEXT NOT NULL, "
+                     "price DECIMAL NOT NULL, is_active BOOLEAN NOT NULL, "
                      "CHECK (dish_id > 0), CHECK ( price > 0 ),CHECK (LENGTH(name) >= 4), PRIMARY KEY(dish_id))")
-        conn.execute("CREATE TABLE CustomerPlacesOrder(cust_id INTEGER,order_id INTEGER,"
-                     "PRIMARY KEY(order_id),"
-                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL,"
-                     "FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE,)")
-        conn.execute("CREATE TABLE OrderContainsDish(order_id INTEGER,dish_id INTEGER,amount INTEGER NOT NULL,price DECIMAL NOT NULL,"
-                     "PRIMARY KEY(order_id, dish_id),"
-                     "FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE,"
-                     "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id),"
+        conn.execute("CREATE TABLE CustomerPlacesOrder(cust_id INTEGER,order_id INTEGER, "
+                     "PRIMARY KEY(order_id), "
+                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL, "
+                     "FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE)")
+        conn.execute("CREATE TABLE OrderContainsDish(order_id INTEGER,dish_id INTEGER,amount INTEGER NOT NULL,price DECIMAL NOT NULL, "
+                     "PRIMARY KEY(order_id, dish_id), "
+                     "FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE, "
+                     "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "CHECK ( amount >= 0 ))")
-        conn.execute("CREATE TABLE CustomerRatedDish(cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL,"
-                     "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5),"
-                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL,"
-                     "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id),"
+        conn.execute("CREATE TABLE CustomerRatedDish(cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL, "
+                     "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5), "
+                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL, "
+                     "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "PRIMARY KEY(cust_id, dish_id))")
         conn.execute("CREATE VIEW OrderTotalPrice AS "
-                     "SELECT od.order_id,"
-                     "SUM((od.amount * od.price) + (SELECT o.delivery_fee FROM Orders o WHERE o.order_id = od.order_id)) AS total_price,"
+                     "SELECT od.order_id, "
+                     "SUM((od.amount * od.price) + (SELECT o.delivery_fee FROM Orders o WHERE o.order_id = od.order_id)) AS total_price, "
                      "(SELECT co.cust_id FROM CustomerPlacesOrder co WHERE co.order_id = od.order_id) AS cust_id "
                      "FROM OrderContainsDish od "
                      "GROUP BY od.order_id")
         conn.execute("CREATE VIEW RatingDish AS "
-                     "SELECT dish_id,"
+                     "SELECT dish_id, "
                      "AVG(rating) AS avg_rating "
                      "FROM CustomerRatedDish "
                      "GROUP BY dish_id")
         conn.execute("CREATE VIEW CustomerOrderedDish AS "
-                     "SELECT  CustomerPlacesOrder.cust_id, OrderContainsDish.dish_id"
-                     "FROM CustomerPlacesOrder, OrderContainsDish"
+                     "SELECT  CustomerPlacesOrder.cust_id, OrderContainsDish.dish_id "
+                     "FROM CustomerPlacesOrder, OrderContainsDish "
                      "WHERE CustomerPlacesOrder.order_id = OrderContainsDish.order_id")
         conn.execute("CREATE VIEW AverageProfitPerOrderPerPrice AS "
-                     "SELECT O.dish_id, O.price, AVG(O.quantity) * O.price AS average_price"
-                     "FROM OrderContainsDish O,"
+                     "SELECT O.dish_id, O.price, (AVG(O.amount) * O.price) AS average_price "
+                     "FROM OrderContainsDish O "
                      "GROUP BY O.price, O.dish_id")
     except DatabaseException.ConnectionInvalid as e:
         print(e)
@@ -142,19 +142,25 @@ def add_customer(customer: Customer) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        rows_effected, result = conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) VALUES({cust_id}, {full_name}, {age}, {phone})").format(
-            cust_id=sql.Literal(customer.get_cust_id()),
-            full_name=sql.Literal(customer.get_full_name()), age=sql.Literal(customer.get_age()),
-            phone=sql.Literal(customer.get_phone()))
-    except DatabaseException.ConnectionInvalid:
+        rows_effected, result = conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) "
+                                             "VALUES({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
+                                                                                                      full_name=sql.Literal(customer.get_full_name()),
+                                                                                                      age=sql.Literal(customer.get_age()),
+                                                                                                      phone=sql.Literal(customer.get_phone()))
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
         return ReturnValue.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION:
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
         return ReturnValue.BAD_PARAMS
-    except DatabaseException.CHECK_VIOLATION:
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
         return ReturnValue.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION:
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
         return ReturnValue.ALREADY_EXISTS
-    except Exception:
+    except Exception as e:
+        print(e)
         return ReturnValue.BAD_PARAMS
     finally:
         conn.close()
