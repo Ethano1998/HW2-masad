@@ -38,7 +38,7 @@ def create_tables() -> None:
                      "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "CHECK ( amount >= 0 ))")
         conn.execute("CREATE TABLE CustomerRatedDish(cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL, "
-                     "rating INTEGER NOT NULL, CHECK ( rating >= 0 ), CHECK ( rating <= 5), "
+                     "rating INTEGER NOT NULL, CHECK ( rating >= 1 ), CHECK ( rating <= 5), "
                      "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL, "
                      "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "PRIMARY KEY(cust_id, dish_id))")
@@ -143,10 +143,11 @@ def add_customer(customer: Customer) -> ReturnValue:
     try:
         conn = Connector.DBConnector()
         query= sql.SQL("INSERT INTO Customers(cust_id, full_name, age, phone) "
-                       "VALUES ({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
-                                                                                                      full_name=sql.Literal(customer.get_full_name()),
-                                                                                                      age=sql.Literal(customer.get_age()),
-                                                                                                      phone=sql.Literal(customer.get_phone()))
+                       "VALUES ({cust_id}, {full_name}, {age}, {phone})").format(
+            cust_id=sql.Literal(customer.get_cust_id()),
+            full_name=sql.Literal(customer.get_full_name()),
+            age=sql.Literal(customer.get_age()),
+            phone=sql.Literal(customer.get_phone()))
         rows_effected, _ = conn.execute(query)
     except DatabaseException.ConnectionInvalid as e:
         print(e)
@@ -172,7 +173,8 @@ def get_customer(customer_id: int) -> Customer:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query= sql.SQL("SELECT * FROM Customers WHERE cust_id = {customer_id}").format(customer_id=sql.Literal(customer_id))
+        query= sql.SQL("SELECT * FROM Customers WHERE cust_id = {customer_id}").format(
+            customer_id=sql.Literal(customer_id))
         rows_effected, result = conn.execute(query)
         if rows_effected == 1:
             row = result.rows[0]
@@ -202,7 +204,8 @@ def delete_customer(customer_id: int) -> ReturnValue:
    conn = None
    try:
        conn = Connector.DBConnector()
-       query = sql.SQL("DELETE FROM Customers WHERE cust_id = {customer_id}").format(customer_id=sql.Literal(customer_id))
+       query = sql.SQL("DELETE FROM Customers WHERE cust_id = {customer_id}").format(
+           customer_id=sql.Literal(customer_id))
        rows_effected, _ = conn.execute(query)
        if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -225,9 +228,11 @@ def add_order(order: Order) -> ReturnValue:
     try:
        conn = Connector.DBConnector()
        query =sql.SQL(
-            "INSERT INTO Orders(order_id, date, delivery_fee, delivery_adress) VALUES({order_id}, {date}, {delivery_fee}, {delivery_adress})").format(
+            "INSERT INTO Orders(order_id, date, delivery_fee, delivery_adress) "
+            "VALUES({order_id}, {date}, {delivery_fee}, {delivery_adress})").format(
             order_id=sql.Literal(order.get_order_id()),
-            date=sql.Literal(order.get_datetime()), delivery_fee=sql.Literal(order.get_delivery_fee()),
+            date=sql.Literal(order.get_datetime()),
+            delivery_fee=sql.Literal(order.get_delivery_fee()),
             delivery_adress=sql.Literal(order.get_delivery_address()))
        rows_effected, _ = conn.execute(query)
     except DatabaseException.ConnectionInvalid:
@@ -249,8 +254,9 @@ def get_order(order_id: int) -> Order:
     conn = None
     try:
         conn = Connector.DBConnector()
-        rows_effected, result = conn.execute("SELECT * FROM Orders WHERE order_id = {order_id}").format(
-            order_id=order_id)
+        query = sql.SQL("SELECT * FROM Orders WHERE order_id = {order_id}").format(
+            order_id=sql.Literal(order_id))
+        rows_effected, result = conn.execute(query)
         if rows_effected == 1:
             row = result.rows[0]
             order = Order(row[0], row[1], row[2], row[3])
@@ -267,7 +273,8 @@ def delete_order(order_id: int) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("DELETE FROM Orders WHERE order_id = {order_id}").format(order_id=order_id)
+        query = sql.SQL("DELETE FROM Orders WHERE order_id = {order_id}").format(
+            order_id=sql.Literal(order_id))
         rows_effected, _ = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -290,9 +297,11 @@ def add_dish(dish: Dish) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO Dishes(dish_id, name, price, is_active) VALUES({dish_id}, {name}, {price}, {is_active})").format(
+        query = sql.SQL("INSERT INTO Dishes(dish_id, name, price, is_active) "
+                        "VALUES({dish_id}, {name}, {price}, {is_active})").format(
             dish_id=sql.Literal(dish.get_dish_id()),
-            name=sql.Literal(dish.get_name()), price=sql.Literal(dish.get_price()),
+            name=sql.Literal(dish.get_name()),
+            price=sql.Literal(dish.get_price()),
             is_active=sql.Literal(dish.get_is_active()))
         rows_effected, _ = conn.execute(query)
     except DatabaseException.ConnectionInvalid:
@@ -314,7 +323,8 @@ def get_dish(dish_id: int) -> Dish:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT * FROM Dishes WHERE cust_id = {dish_id}").format(dish_id =sql.Literal(dish_id))
+        query = sql.SQL("SELECT * FROM Dishes WHERE dish_id = {dish_id}").format(
+            dish_id =sql.Literal(dish_id))
         rows_effected, result = conn.execute(query)
         if rows_effected == 1:
             row = result.rows[0]
@@ -332,7 +342,10 @@ def update_dish_price(dish_id: int, price: float) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("UPDATE Dishes SET price = {price} WHERE dish_id = {dish_id} AND is_active = true").format(dish_id = sql.Literal(dish_id), price = sql.Literal(price))
+        query = sql.SQL("UPDATE Dishes SET price = {price} "
+                        "WHERE dish_id = {dish_id} AND is_active = true").format(
+            dish_id = sql.Literal(dish_id),
+            price = sql.Literal(price))
         rows_effected, result = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -354,32 +367,99 @@ def update_dish_price(dish_id: int, price: float) -> ReturnValue:
 
 
 def update_dish_active_status(dish_id: int, is_active: bool) -> ReturnValue:
-    # TODO: implement
-    pass
-
-
-def customer_placed_order(customer_id: int, order_id: int) -> ReturnValue:
-    # TODO: implement
-    pass
-
-
-def get_customer_that_placed_order(order_id: int) -> Customer:
-    # TODO: implement
-    pass
-
-
-def order_contains_dish(order_id: int, dish_id: int, amount: int) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO OrderContainsDish(order_id, dish_id, amount, price) VALUES ({order_id},{dish_id},{amount},(SELECT price FROM Dishes WHERE dish_id = {dish_id} AND is_active = true))").format(order_id=sql.Literal(order_id), dish_id=sql.Literal(dish_id), amount=sql.Literal(amount))
-        rows_effected, result = conn.execute(query)
+        query = sql.SQL("UPDATE Dishes SET is_active = {is_active} "
+                        "WHERE dish_id = {dish_id}").format(
+            is_active=sql.Literal(is_active),
+            dish_id=sql.Literal(dish_id))
+        rows_effected, _ = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
     except DatabaseException.ConnectionInvalid:
         return ReturnValue.ERROR
     except DatabaseException.NOT_NULL_VIOLATION:
         return ReturnValue.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return ReturnValue.ALREADY_EXISTS
+    except DatabaseException.FOREIGN_KEY_VIOLATION:
+        return ReturnValue.NOT_EXISTS
+    except Exception:
+        return ReturnValue.BAD_PARAMS
+    finally:
+        conn.close()
+    return ReturnValue.OK
+
+
+def customer_placed_order(customer_id: int, order_id: int) -> ReturnValue:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("INSERT INTO CustomerPlacesOrder(cust_id, order_id)"
+                        " VALUES({cust_id}, {order_id})").format(
+            cust_id=sql.Literal(customer_id),
+            order_id=sql.Literal(order_id))
+        rows_effected, _ = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return ReturnValue.ERROR
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return ReturnValue.ALREADY_EXISTS
+    except DatabaseException.FOREIGN_KEY_VIOLATION:
+        return ReturnValue.NOT_EXISTS
+    except Exception:
+        return ReturnValue.ERROR
+    finally:
+        conn.close()
+    return ReturnValue.OK
+
+
+def get_customer_that_placed_order(order_id: int) -> Customer:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT C.cust_id, C.full_name, C.age, C.phone"
+                        " FROM Customers C, CustomerPlacesOrder O"
+                        " WHERE C.cust_id = O.cust_id AND O.order_id = {order_id}").format(
+            order_id=sql.Literal(order_id))
+        rows_effected, result = conn.execute(query)
+        if rows_effected == 1:
+            row = result.rows[0]
+            customer = Customer(row[0], row[1], row[2], row[3])
+        else:
+            customer = BadCustomer()
+    except Exception:
+        return BadCustomer()
+    finally:
+        conn.close()
+    return customer
+
+
+def order_contains_dish(order_id: int, dish_id: int, amount: int) -> ReturnValue:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("INSERT INTO OrderContainsDish(order_id, dish_id, amount, price) "
+                        "VALUES ({order_id},{dish_id},{amount}, "
+                        "(SELECT price FROM Dishes WHERE dish_id = {dish_id} AND is_active = true))").format(
+            order_id=sql.Literal(order_id),
+            dish_id=sql.Literal(dish_id),
+            amount=sql.Literal(amount))
+        rows_effected, result = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return ReturnValue.ERROR
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return ReturnValue.NOT_EXISTS
     except DatabaseException.CHECK_VIOLATION:
         return ReturnValue.BAD_PARAMS
     except DatabaseException.UNIQUE_VIOLATION:
@@ -396,7 +476,10 @@ def order_does_not_contain_dish(order_id: int, dish_id: int) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("DELETE FROM OrderContainsDish WHERE order_id = {order_id} AND dish_id = {dish_id}").format(order_id = sql.Literal(order_id), dish_id = sql.Literal(dish_id))
+        query = sql.SQL("DELETE FROM OrderContainsDish "
+                        "WHERE order_id = {order_id} AND dish_id = {dish_id}").format(
+            order_id = sql.Literal(order_id),
+            dish_id = sql.Literal(dish_id))
         rows_effected, result = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -418,15 +501,34 @@ def order_does_not_contain_dish(order_id: int, dish_id: int) -> ReturnValue:
 
 
 def get_all_order_items(order_id: int) -> List[OrderDish]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT D.dish_id, O.amount, O.price "
+                        "FROM Dishes D, OrderContainsDish O "
+                        "WHERE D.dish_id = O.dish_id AND O.order_id = {order_id} "
+                        "ORDER BY dish_id ASC").format(
+            order_id=sql.Literal(order_id))
+        rows_effected, result = conn.execute(query)
+        dishes = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            order_dish = OrderDish(row[0], row[1], row[2])
+            dishes.append(order_dish)
+    finally:
+        conn.close()
+    return dishes
 
 
 def customer_rated_dish(cust_id: int, dish_id: int, rating: int) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO CustomerRatedDish(cust_id, dish_id, rating) VALUES ({cust_id},{dish_id},{rating})").format(cust_id = sql.Literal(cust_id), dish_id = sql.Literal(dish_id), rating = sql.Literal(rating))
+        query = sql.SQL("INSERT INTO CustomerRatedDish(cust_id, dish_id, rating) "
+                        "VALUES ({cust_id},{dish_id},{rating})").format(
+            cust_id = sql.Literal(cust_id),
+            dish_id = sql.Literal(dish_id),
+            rating = sql.Literal(rating))
         rows_effected, result = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -451,7 +553,10 @@ def customer_deleted_rating_on_dish(cust_id: int, dish_id: int) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("DELETE FROM CustomerRatedDish WHERE cust_id = {cust_id} AND dish_id = {dish_id}").format(cust_id = sql.Literal(cust_id), dish_id = sql.Literal(dish_id))
+        query = sql.SQL("DELETE FROM CustomerRatedDish "
+                        "WHERE cust_id = {cust_id} AND dish_id = {dish_id}").format(
+            cust_id = sql.Literal(cust_id),
+            dish_id = sql.Literal(dish_id))
         rows_effected, result = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
@@ -472,8 +577,23 @@ def customer_deleted_rating_on_dish(cust_id: int, dish_id: int) -> ReturnValue:
     return ReturnValue.OK
 
 def get_all_customer_ratings(cust_id: int) -> List[Tuple[int, int]]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT D.dish_id, D.rating "
+                        "FROM CustomerRatedDish D "
+                        "WHERE D.cust_id = {cust_id} "
+                        "ORDER BY dish_id ASC").format(
+            cust_id=sql.Literal(cust_id))
+        rows_effected, result = conn.execute(query)
+        ratings = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            rating = (row[0], row[1])
+            ratings.append(rating)
+    finally:
+        conn.close()
+    return ratings
 # ---------------------------------- BASIC API: ----------------------------------
 
 # Basic API
