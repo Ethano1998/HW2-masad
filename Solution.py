@@ -57,11 +57,10 @@ def create_tables() -> None:
                      "SELECT  CustomerPlacesOrder.cust_id, OrderContainsDish.dish_id"
                      "FROM CustomerPlacesOrder, OrderContainsDish"
                      "WHERE CustomerPlacesOrder.order_id = OrderContainsDish.order_id")
-        conn.execute("CREATE VIEW Average_profit_per_order_per_price AS "
-                     "SELECT "
-                     "FROM Dish, Order_contains_dish, "
-                     "WHERE Customer_place_order.order_id = Order_contains_dish.order_id"
-                     "GROUP BY")
+        conn.execute("CREATE VIEW AverageProfitPerOrderPerPrice AS "
+                     "SELECT O.dish_id, O.price, AVG(O.quantity) * O.price AS average_price"
+                     "FROM OrderContainsDish O,"
+                     "GROUP BY O.price, O.dish_id")
     except DatabaseException.ConnectionInvalid as e:
         print(e)
     except DatabaseException.NOT_NULL_VIOLATION as e:
@@ -77,7 +76,6 @@ def create_tables() -> None:
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
-    pass
 
 
 def clear_tables() -> None:
@@ -96,9 +94,10 @@ def add_customer(customer: Customer) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        rows_effected, result = conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) VALUES({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
-                                                                                       full_name=sql.Literal(customer.get_full_name()), age=sql.Literal(customer.get_age()),
-                                                                                       phone=sql.Literal(customer.get_phone()))
+        rows_effected, result = conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) VALUES({cust_id}, {full_name}, {age}, {phone})").format(
+            cust_id=sql.Literal(customer.get_cust_id()),
+            full_name=sql.Literal(customer.get_full_name()), age=sql.Literal(customer.get_age()),
+            phone=sql.Literal(customer.get_phone()))
     except DatabaseException.ConnectionInvalid:
         return ReturnValue.ERROR
     except DatabaseException.NOT_NULL_VIOLATION:
@@ -153,8 +152,27 @@ def delete_customer(customer_id: int) -> ReturnValue:
    return ReturnValue.OK
 
 def add_order(order: Order) -> ReturnValue:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, result = conn.execute(
+            "INSERT INTO Orders(order_id, date, delivery_fee, delivery_adress) VALUES({order_id}, {date}, {delivery_fee}, {delivery_adress})").format(
+            order_id=sql.Literal(order.get_order_id()),
+            date=sql.Literal(order.get_datetime()), delivery_fee=sql.Literal(order.get_delivery_fee()),
+            delivery_adress=sql.Literal(order.get_delivery_address()))
+    except DatabaseException.ConnectionInvalid:
+        return ReturnValue.ERROR
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return ReturnValue.ALREADY_EXISTS
+    except Exception:
+        return ReturnValue.BAD_PARAMS
+    finally:
+        conn.close()
+    return ReturnValue.OK
 
 
 def get_order(order_id: int) -> Order:
