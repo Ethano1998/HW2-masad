@@ -2,7 +2,6 @@ from typing import List, Tuple
 from psycopg2 import sql
 from datetime import date, datetime
 import Utility.DBConnector as Connector
-from Utility.DBConnector import ResultSet
 from Utility.ReturnValue import ReturnValue
 from Utility.Exceptions import DatabaseException
 from Business.Customer import Customer, BadCustomer
@@ -55,7 +54,7 @@ def create_tables() -> None:
                      "FROM CustomerRatedDish "
                      "GROUP BY dish_id")
         conn.execute("CREATE VIEW CustomerOrderedDish AS "
-                     "SELECT  CustomerPlacesOrder.customer_id, OrderContainsDish.dish_id"
+                     "SELECT  CustomerPlacesOrder.cust_id, OrderContainsDish.dish_id"
                      "FROM CustomerPlacesOrder, OrderContainsDish"
                      "WHERE CustomerPlacesOrder.order_id = OrderContainsDish.order_id")
         conn.execute("CREATE VIEW Average_profit_per_order_per_price AS "
