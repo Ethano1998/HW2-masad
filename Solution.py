@@ -96,10 +96,9 @@ def add_customer(customer: Customer) -> ReturnValue:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO Customers(cust_id, full_name, age, phone) VALUES({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
+        rows_effected, result = conn.execute("INSERT INTO Customers(cust_id, full_name, age, phone) VALUES({cust_id}, {full_name}, {age}, {phone})").format(cust_id=sql.Literal(customer.get_cust_id()),
                                                                                        full_name=sql.Literal(customer.get_full_name()), age=sql.Literal(customer.get_age()),
                                                                                        phone=sql.Literal(customer.get_phone()))
-        rows_effected, _ = conn.execute(query)
     except DatabaseException.ConnectionInvalid:
         return ReturnValue.ERROR
     except DatabaseException.NOT_NULL_VIOLATION:
