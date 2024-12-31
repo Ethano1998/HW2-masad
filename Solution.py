@@ -49,14 +49,15 @@ def create_tables() -> None:
                      "FROM OrderContainsDish od "
                      "GROUP BY od.order_id")
         conn.execute("CREATE VIEW RatingDish AS "
-                     "SELECT dish_id, "
-                     "AVG(rating) AS avg_rating "
-                     "FROM CustomerRatedDish "
-                     "GROUP BY dish_id")
+                     "SELECT D.dish_id, "
+                     "coalesce(AVG(C.rating), 3) AS avg_rating "
+                     "FROM Dishes D "
+                     "LEFT JOIN CustomerRatedDish C ON D.dish_id = C.dish_id "
+                     "GROUP BY D.dish_id ")
         conn.execute("CREATE VIEW CustomerOrderedDish AS "
-                     "SELECT  CustomerPlacesOrder.cust_id, OrderContainsDish.dish_id "
-                     "FROM CustomerPlacesOrder, OrderContainsDish "
-                     "WHERE CustomerPlacesOrder.order_id = OrderContainsDish.order_id")
+                     "SELECT  C.cust_id, O.dish_id "
+                     "FROM CustomerPlacesOrder C, OrderContainsDish O "
+                     "WHERE C.order_id = O.order_id AND C.cust_id IS NOT NULL ")
         conn.execute("CREATE VIEW AverageProfitPerOrderPerPrice AS "
                      "SELECT O.dish_id, O.price, (AVG(O.amount) * O.price) AS average_price "
                      "FROM OrderContainsDish O "
@@ -610,13 +611,40 @@ def get_customers_spent_max_avg_amount_money() -> List[int]:
 
 
 def get_most_purchased_dish_among_anonymous_order() -> Dish:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT D.dish_id, D.name, D.price, D.is_active "
+                        "FROM Dishes D, OrderContainsDish O "
+                        "WHERE O.order_id NOT IN "
+                        "(SELECT order_id FROM CustomerPlacesOrder C WHERE C.cust_id IS NOT NULL) "
+                        "AND D.dish_id = O.dish_id "
+                        "GROUP BY D.dish_id, D.name, D.price, D.is_active "
+                        "ORDER BY SUM(O.amount) DESC, D.dish_id "
+                        "LIMIT 1 ")
+        rows_effected, result = conn.execute(query)
+        row = result.rows[0]
+        dish = Dish(row[0], row[1], row[2], row[3])
+    finally:
+        conn.close()
+    return dish
 
 
 def did_customer_order_top_rated_dishes(cust_id: int) -> bool:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT C.dish_id, TOP.avg_rating "
+                        "FROM CustomerOrderedDish C, "
+                        "(SELECT * FROM RatingDish ORDER BY avg_rating DESC, dish_id LIMIT 5) AS TOP "
+                        "WHERE C.cust_id = {cust_id} AND C.dish_id = TOP.dish_id ").format(
+            cust_id=sql.Literal(cust_id))
+        rows_effected, result = conn.execute(query)
+        if rows_effected != 0:
+            return True
+    finally:
+        conn.close()
+    return False
 
 
 # ---------------------------------- ADVANCED API: ----------------------------------
