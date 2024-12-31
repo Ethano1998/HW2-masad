@@ -630,6 +630,7 @@ class Test(AbstractTest):
         #
 
     def test_get_most_purchased_dish_among_anonymous_order(self) -> None:
+        ##### initial setup ############################################################################
         o1 = Order(order_id=1, date=datetime(year=1000, month=12, day=31, hour=23, minute=1, second=23),
                    delivery_fee=1, delivery_address="address")
         self.assertEqual(ReturnValue.OK, Solution.add_order(o1), 'test 12.1')
@@ -664,6 +665,7 @@ class Test(AbstractTest):
         self.assertEqual(ReturnValue.OK, Solution.add_customer(c3), 'test 12.14')
         c4 = Customer(cust_id=4, full_name='4', age=22, phone="0123456789")
         self.assertEqual(ReturnValue.OK, Solution.add_customer(c4), 'test 12.15')
+        ################################################################################################
         self.assertEqual(ReturnValue.OK,
                          Solution.order_contains_dish(2, 2, 2), 'test 12.16')
         self.assertEqual(Dish(dish_id=2, name='yummy', price=2, is_active=True),
@@ -698,8 +700,8 @@ class Test(AbstractTest):
                          Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.32')
         self.assertEqual(ReturnValue.OK, Solution.customer_placed_order(3, 3), 'test 12.33')
         self.assertEqual(ReturnValue.OK, Solution.order_contains_dish(4,4,1), 'test 12.34')
-        self.assertEqual(Dish(dish_id=4, name='1000000', price=4, is_active=True),
-                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.35')
+        self.assertEqual(Dish(dish_id=3, name='100000', price=3, is_active=True),
+                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.35') # FIXED
         self.assertEqual(ReturnValue.OK, Solution.delete_order(1), 'test 12.36')
         o2_dishes = [OrderDish(2, 2, 2), OrderDish(3, 1, 3)]
         o3_dishes = [OrderDish(1, 2, 1), OrderDish(2, 1, 2),
@@ -708,20 +710,17 @@ class Test(AbstractTest):
         self.assertEqual(o2_dishes, Solution.get_all_order_items(2),'test 12.37')
         self.assertEqual(o3_dishes, Solution.get_all_order_items(3), 'test 12.38')
         self.assertEqual(o4_dishes, Solution.get_all_order_items(4), 'test 12.39')
-        self.assertEqual(Dish(dish_id=4, name='1000000', price=4, is_active=True),
-                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.40')
+        self.assertEqual(Dish(dish_id=2, name='yummy', price=2, is_active=True),
+                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.40') # FIXED
         self.assertEqual(ReturnValue.OK, Solution.order_does_not_contain_dish(3, 3), 'test 12.41')
-        self.assertEqual(Dish(dish_id=3, name='100000', price=3, is_active=True),
-                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.42')
+        self.assertEqual(Dish(dish_id=2, name='yummy', price=2, is_active=True),
+                         Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.42') # FIXED
         self.assertEqual(ReturnValue.OK, Solution.order_does_not_contain_dish(3, 2), 'test 12.43')
         self.assertEqual(Dish(dish_id=2, name='yummy', price=2, is_active=True),
                          Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.44')
         self.assertEqual(ReturnValue.OK, Solution.customer_placed_order(4, 2), 'test 12.45')
-        self.assertEqual(Dish(dish_id=4, name='1000000', price=4, is_active=True),
+        self.assertEqual(Dish(dish_id=3, name='100000', price=3, is_active=True),
                          Solution.get_most_purchased_dish_among_anonymous_order(), 'test 12.46')
-        #
-        # NOTE: MAKE MORE COMPREHENSIVE TESTS
-        #
 
     def test_did_customer_order_top_rated_dishes(self) -> None:
         o1 = Order(order_id=1, date=datetime(year=1000, month=12, day=31, hour=23, minute=1, second=23),

@@ -663,8 +663,26 @@ def get_non_worth_price_increase() -> List[int]:
 
 
 def get_cumulative_profit_per_month(year: int) -> List[Tuple[int, float]]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("WITH MonthlyRevenue AS "
+                        "(SELECT YEARORDER.month, SUM(P.total_price) AS revenue "
+                        "FROM  OrderTotalPrice P, "
+                        "(SELECT O.order_id, EXTRACT(MONTH FROM O.date) AS month FROM Orders O "
+                        "WHERE EXTRACT(YEAR FROM O.date) = {year}) AS YEARORDER "
+                        "WHERE YEARORDER.order_id = P.order_id "
+                        "GROUP BY YEARORDER.month) "
+                        "SELECT A.month, "
+                        "(SELECT SUM(B.revenue) FROM MonthlyRevenue B WHERE B.month <= A.month) "
+                        " FROM MonthlyRevenue A ORDER BY A.month").format(
+            year=sql.Literal(year))
+        rows_effected, result = conn.execute(query)
+        if rows_effected != 0:
+            return True
+    finally:
+        conn.close()
+    return False
 
 
 def get_potential_dish_recommendations(cust_id: int) -> List[int]:
