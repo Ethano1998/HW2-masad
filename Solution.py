@@ -43,11 +43,11 @@ def create_tables() -> None:
                      "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "PRIMARY KEY(cust_id, dish_id))")
         conn.execute("CREATE VIEW OrderTotalPrice AS "
-                     "SELECT od.order_id, "
-                     "SUM((od.amount * od.price) + (SELECT o.delivery_fee FROM Orders o WHERE o.order_id = od.order_id)) AS total_price, "
-                     "(SELECT co.cust_id FROM CustomerPlacesOrder co WHERE co.order_id = od.order_id) AS cust_id "
-                     "FROM OrderContainsDish od "
-                     "GROUP BY od.order_id")
+                     "SELECT o.order_id, "
+                     "SUM(coalesce((od.amount * od.price), 0)) + o.delivery_fee AS total_price, "
+                     "(SELECT co.cust_id FROM CustomerPlacesOrder co WHERE co.order_id = o.order_id) AS cust_id "
+                     "FROM Orders o LEFT OUTER JOIN OrderContainsDish od ON o.order_id = od.order_id "
+                     "GROUP BY o.order_id")
         conn.execute("CREATE VIEW RatingDish AS "
                      "SELECT D.dish_id, "
                      "coalesce(AVG(C.rating), 3) AS avg_rating "
@@ -666,23 +666,30 @@ def get_cumulative_profit_per_month(year: int) -> List[Tuple[int, float]]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("WITH MonthlyRevenue AS "
+        query = sql.SQL("WITH RECURSIVE Months AS "
+                        "(SELECT 1 AS month UNION ALL "
+                        "SELECT month + 1 FROM Months WHERE month < 12), "
+                        "MonthlyRevenue AS "
                         "(SELECT YEARORDER.month, SUM(P.total_price) AS revenue "
                         "FROM  OrderTotalPrice P, "
                         "(SELECT O.order_id, EXTRACT(MONTH FROM O.date) AS month FROM Orders O "
                         "WHERE EXTRACT(YEAR FROM O.date) = {year}) AS YEARORDER "
                         "WHERE YEARORDER.order_id = P.order_id "
                         "GROUP BY YEARORDER.month) "
-                        "SELECT A.month, "
-                        "(SELECT SUM(B.revenue) FROM MonthlyRevenue B WHERE B.month <= A.month) "
-                        " FROM MonthlyRevenue A ORDER BY A.month").format(
+                        "SELECT M.month, (SELECT coalesce(SUM(R.revenue), 0) FROM MonthlyRevenue R WHERE M.month >= R.month) "
+                        "FROM Months M LEFT OUTER JOIN MonthlyRevenue R ON M.month = R.month "
+                        "GROUP BY M.month "
+                        "ORDER BY M.month DESC").format(
             year=sql.Literal(year))
         rows_effected, result = conn.execute(query)
-        if rows_effected != 0:
-            return True
+        revenues = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            revenue = (int(row[0]), float(row[1]))
+            revenues.append(revenue)
     finally:
         conn.close()
-    return False
+    return revenues
 
 
 def get_potential_dish_recommendations(cust_id: int) -> List[int]:
