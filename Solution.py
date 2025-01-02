@@ -693,8 +693,28 @@ def get_cumulative_profit_per_month(year: int) -> List[Tuple[int, float]]:
 
 
 def get_potential_dish_recommendations(cust_id: int) -> List[int]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("WITH RECURSIVE SimilarCustomers AS "
+                        "(SELECT {cust_id} AS cust_id UNION "
+                        "SELECT C2.cust_id "
+                        "FROM SimilarCustomers S JOIN CustomerRatedDish C ON S.cust_id = C.cust_id "
+                        "JOIN CustomerRatedDish C2 ON C.dish_id = C2.dish_id "
+                        "WHERE C.rating >= 4 AND C2.rating >= 4) "
+                        "SELECT DISTINCT C.dish_id FROM SimilarCustomers S, CustomerRatedDish C "
+                        "WHERE S.cust_id = C.cust_id "
+                        "AND {cust_id} NOT IN (SELECT cust_id FROM CustomerOrderedDish D WHERE D.dish_id = C.dish_id) "
+                        "ORDER BY dish_id").format(
+            cust_id=sql.Literal(cust_id))
+        rows_effected, result = conn.execute(query)
+        dishes = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            dishes.append(int(row[0]))
+    finally:
+        conn.close()
+    return dishes
 
 """if __name__ == '__main__':
     def create_tabless() -> None:

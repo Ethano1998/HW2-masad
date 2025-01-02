@@ -1451,6 +1451,311 @@ class Test(AbstractTest):
         self.assertEqual(cumulative_profits_1300, get_cumulative_profit_per_month(1300), 'test 16.44')
 
 
+    def test_get_potential_dish_recommendations(self) -> None:
+        c1 = Customer(cust_id=1, full_name='1', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c1), 'test 17.1')
+        c2 = Customer(cust_id=2, full_name='2', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c2), 'test 17.2')
+        c3 = Customer(cust_id=3, full_name='3', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c3), 'test 17.3')
+        c4 = Customer(cust_id=4, full_name='4', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c4), 'test 17.4')
+
+        d1 = Dish(dish_id=1, name='10000', price=1, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d1), 'test 17.5')
+        d2 = Dish(dish_id=2, name='yummy', price=2, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d2), 'test 17.6')
+        d3 = Dish(dish_id=3, name='daldasl', price=3, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d3), 'test 17.7')
+        d4 = Dish(dish_id=4, name='ggggg', price=4, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d4), 'test 17.8')
+        d5 = Dish(dish_id=5, name='100000', price=5, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d5), 'test 17.9')
+        d6 = Dish(dish_id=6, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d6), 'test 17.10')
+        d7 = Dish(dish_id=7, name='10sss00', price=7, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d7), 'test 17.11')
+
+        o1 = Order(order_id=1, date=datetime(year=1000, month=12, day=29, hour=3, minute=1, second=11),
+                   delivery_fee=1, delivery_address="address")
+        self.assertEqual(ReturnValue.OK, Solution.add_order(o1), 'test 17.12')
+
+        # the test case provided in hw2.pdf:
+        order_contains_dish(1,1,1)
+        order_contains_dish(1,2,1)
+        order_contains_dish(1,3,1)
+        customer_placed_order(1,1)
+
+        customer_rated_dish(1,1,4)
+        customer_rated_dish(1,2,5)
+        customer_rated_dish(1,3,4)
+
+        customer_rated_dish(2,1,5)
+        customer_rated_dish(2,4,4)
+
+        customer_rated_dish(3,4,5)
+        customer_rated_dish(3,5,5)
+        customer_rated_dish(3,7,4)
+
+        customer_rated_dish(4,6,5)
+
+        c1_recommended_dishes = [4, 5, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.13')
+
+        # and some more tests
+        customer_rated_dish(4,5,3)
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.14')
+
+        customer_deleted_rating_on_dish(4, 5)
+        customer_rated_dish(4,5,4)
+        c1_recommended_dishes = [4, 5, 6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.15')
+
+        customer_deleted_rating_on_dish(2, 4)
+        c1_recommended_dishes = []
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.16')
+
+        customer_rated_dish(3, 2, 5)
+        c1_recommended_dishes = [4, 5, 6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.17')
+
+        order_contains_dish(1,5,111)
+        c1_recommended_dishes = [4, 6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.18')
+
+        order_contains_dish(1, 4, 111)
+        c1_recommended_dishes = [6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.19')
+
+        order_contains_dish(1, 7, 111)
+        c1_recommended_dishes = [6]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.20')
+
+        delete_order(1)
+        add_order(o1)
+        customer_placed_order(1,1)
+        order_contains_dish(1,2,343)
+        customer_deleted_rating_on_dish(1,1)
+        customer_deleted_rating_on_dish(1,3)
+        c1_recommended_dishes = [4, 5, 6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.21')
+
+        order_contains_dish(1,5,3333)
+        customer_rated_dish(1,5,2)
+        c1_recommended_dishes = [4, 6, 7]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.22')
+
+        o2 = Order(order_id=2, date=datetime(year=1000, month=12, day=29, hour=3, minute=1, second=11),
+                   delivery_fee=1, delivery_address="address")
+        self.assertEqual(ReturnValue.OK, Solution.add_order(o2), 'test 17.23')
+        order_contains_dish(2,1,777)
+        customer_placed_order(2,2)
+        c2_recommended_dishes = []
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.24')
+
+        customer_rated_dish(4,1,4)
+        c2_recommended_dishes = [2, 4, 5, 6, 7]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.25')
+
+        order_contains_dish(1,3, 20)
+        customer_rated_dish(1, 3, 4)
+
+        c2_recommended_dishes = [2, 3, 4, 5, 6, 7]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.26')
+
+        customer_deleted_rating_on_dish(1,2)
+        c2_recommended_dishes = [2, 4, 5, 6, 7]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.27')
+
+        customer_deleted_rating_on_dish(1, 5)
+        order_contains_dish(1, 5, 4444444)
+        customer_rated_dish(1,5,5)
+        c2_recommended_dishes = [2, 3, 4, 5, 6, 7]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.28')
+
+        customer_deleted_rating_on_dish(3,5)
+        c2_recommended_dishes = [3, 5, 6]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.29')
+
+        customer_deleted_rating_on_dish(1,5)
+        c2_recommended_dishes = [5, 6]
+        self.assertEqual(c2_recommended_dishes, get_potential_dish_recommendations(2), 'test 17.30')
+
+        o3 = Order(order_id=3, date=datetime(year=1000, month=12, day=29, hour=3, minute=1, second=11),
+                   delivery_fee=1, delivery_address="address")
+        self.assertEqual(ReturnValue.OK, Solution.add_order(o3), 'test 17.31')
+        customer_placed_order(3,3)
+        order_contains_dish(3,2,123)
+        order_contains_dish(3,4,11231)
+        order_contains_dish(3,7,12)
+        c3_recommended_dishes = []
+        self.assertEqual(c3_recommended_dishes, get_potential_dish_recommendations(3), 'test 17.32')
+
+        o4 = Order(order_id=4, date=datetime(year=1000, month=12, day=29, hour=3, minute=1, second=11),
+                   delivery_fee=1, delivery_address="address")
+        self.assertEqual(ReturnValue.OK, Solution.add_order(o4), 'test 17.33')
+        customer_placed_order(4,4)
+        order_contains_dish(4,1,12222)
+        order_contains_dish(4,5,12222)
+        order_contains_dish(4,6,1243)
+        c4_recommended_dishes = []
+        self.assertEqual(c4_recommended_dishes, get_potential_dish_recommendations(4), 'test 17.33')
+
+        customer_rated_dish(2,2,5)
+        c4_recommended_dishes = [2, 4, 7]
+        self.assertEqual(c4_recommended_dishes, get_potential_dish_recommendations(4), 'test 17.34')
+
+        customer_rated_dish(1,2,5)
+        c4_recommended_dishes = [2, 3, 4, 7]
+        self.assertEqual(c4_recommended_dishes, get_potential_dish_recommendations(4), 'test 17.35')
+
+        clear_tables()
+        c1 = Customer(cust_id=1, full_name='1', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c1))
+        c2 = Customer(cust_id=2, full_name='2', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c2))
+        c3 = Customer(cust_id=3, full_name='3', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c3))
+        c4 = Customer(cust_id=4, full_name='4', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c4))
+        c5 = Customer(cust_id=5, full_name='1', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c5))
+        c6 = Customer(cust_id=6, full_name='2', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c6))
+        c7 = Customer(cust_id=7, full_name='3', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c7))
+        c8 = Customer(cust_id=8, full_name='4', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c8))
+        c9 = Customer(cust_id=9, full_name='1', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c9))
+        c10 = Customer(cust_id=10, full_name='2', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c10))
+        c11 = Customer(cust_id=11, full_name='3', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c11))
+        c12 = Customer(cust_id=12, full_name='4', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c12))
+        c13 = Customer(cust_id=13, full_name='1', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c13))
+        c14 = Customer(cust_id=14, full_name='2', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c14))
+        c15 = Customer(cust_id=15, full_name='3', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c15))
+        c16 = Customer(cust_id=16, full_name='4', age=22, phone="0123456789")
+        self.assertEqual(ReturnValue.OK, Solution.add_customer(c16))
+
+        d1 = Dish(dish_id=1, name='10000', price=1, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d1))
+        d2 = Dish(dish_id=2, name='yummy', price=2, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d2))
+        d3 = Dish(dish_id=3, name='daldasl', price=3, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d3))
+        d4 = Dish(dish_id=4, name='ggggg', price=4, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d4))
+        d5 = Dish(dish_id=5, name='100000', price=5, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d5))
+        d6 = Dish(dish_id=6, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d6))
+        d7 = Dish(dish_id=7, name='10sss00', price=7, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d7))
+        d8 = Dish(dish_id=8, name='10000', price=1, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d8))
+        d9 = Dish(dish_id=9, name='yummy', price=2, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d9))
+        d10 = Dish(dish_id=10, name='daldasl', price=3, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d10))
+        d11 = Dish(dish_id=11, name='ggggg', price=4, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d11))
+        d12 = Dish(dish_id=12, name='100000', price=5, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d12))
+        d13 = Dish(dish_id=13, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d13))
+        d14 = Dish(dish_id=14, name='10sss00', price=7, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d14))
+        d15 = Dish(dish_id=15, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d15))
+        d16 = Dish(dish_id=16, name='10sss00', price=7, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d16))
+        d17 = Dish(dish_id=17, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d17))
+        d18 = Dish(dish_id=18, name='10sss00', price=7, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d18))
+        d19 = Dish(dish_id=19, name='1afa0gg', price=6, is_active=True)
+        self.assertEqual(ReturnValue.OK, Solution.add_dish(d19))
+
+
+        o1 = Order(order_id=1, date=datetime(year=1000, month=12, day=29, hour=3, minute=1, second=11),
+                   delivery_fee=1, delivery_address="address")
+        self.assertEqual(ReturnValue.OK, Solution.add_order(o1))
+
+        customer_placed_order(1,1)
+        order_contains_dish(1,1,1)
+        order_contains_dish(1,2,1)
+        customer_rated_dish(1,1,4)
+        customer_rated_dish(1,2,5)
+
+        customer_rated_dish(2,1,5)
+        customer_rated_dish(2,2,4)
+        customer_rated_dish(2,3,4)
+
+        customer_rated_dish(3,3,5)
+        customer_rated_dish(3,4,4)
+
+        customer_rated_dish(4,4,5)
+        customer_rated_dish(4,5,5)
+
+        customer_rated_dish(5,5,4)
+        customer_rated_dish(5,6,4)
+
+        customer_rated_dish(6,6,4)
+        customer_rated_dish(6,7,5)
+
+        customer_rated_dish(7,7,4)
+        customer_rated_dish(7,8,5)
+
+        customer_rated_dish(8,8,4)
+        customer_rated_dish(8,9,5)
+
+        customer_rated_dish(9, 9, 4)
+        customer_rated_dish(9, 10, 5)
+
+        customer_rated_dish(10, 10, 4)
+        customer_rated_dish(10, 11, 5)
+
+        customer_rated_dish(11, 5, 5)
+        customer_rated_dish(11,12,4)
+
+        customer_rated_dish(12,3,4)
+        customer_rated_dish(12,13,5)
+        customer_rated_dish(12,16,4)
+
+        customer_rated_dish(13,14,5)
+
+        customer_rated_dish(14,14,4)
+        customer_rated_dish(14,15,4)
+
+        customer_rated_dish(15, 1, 5)
+        customer_rated_dish(15,2,4)
+
+        customer_rated_dish(16, 17, 5)
+        customer_rated_dish(16, 18, 5)
+        customer_rated_dish(16, 19, 5)
+
+        c1_recommended_dishes = [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            16
+        ]
+        self.assertEqual(c1_recommended_dishes, get_potential_dish_recommendations(1), 'test 17.36')
+
 
 
 if __name__ == '__main__':
