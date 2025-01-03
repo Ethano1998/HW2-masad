@@ -680,7 +680,6 @@ def get_customers_rated_but_not_ordered() -> List[int]:
                         "c.dish_id IN (SELECT dish_id FROM RatingDish ORDER BY avg_rating ASC , dish_id ASC LIMIT 5) "
                         "ORDER BY cust_id ASC")
         rows_effected, result = conn.execute(query)
-        print(result)
         customers_bad = []
         for i in range(rows_effected):
             row = result.rows[i]
