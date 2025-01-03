@@ -694,11 +694,20 @@ def get_non_worth_price_increase() -> List[int]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT DISTINCT dish_id FROM Dihes D WHERE is_active = true AND "
-                        "(SELECT dish_id FROM AverageProfitPerOrderPerPrice WHERE average_price)")
+        query = sql.SQL("SELECT DISTINCT p1.dish_id FROM AverageProfitPerOrderPerPrice p1 "
+                        "JOIN AverageProfitPerOrderPerPrice p2 "
+                        "ON p1.dish_id = p2.dish_id  AND p1.price > p2.price AND p1.average_price < p2.average_price "
+                        "WHERE p1.dish_id IN (SELECT dish_id FROM Dishes d WHERE is_active = true AND p1.price = d.price) "
+                        "ORDER BY p1.dish_id ASC")
+        rows_effected, result = conn.execute(query)
+        price_bad = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            ids = int(row[0])
+            price_bad.append(ids)
     finally:
         conn.close()
-    pass
+    return price_bad
 
 
 def get_cumulative_profit_per_month(year: int) -> List[Tuple[int, float]]:
