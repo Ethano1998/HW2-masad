@@ -675,7 +675,7 @@ def get_customers_rated_but_not_ordered() -> List[int]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT DISTINCT cust_id FROM CustomerRatedDish AS c WHERE dish_id < 3 AND "
+        query = sql.SQL("SELECT DISTINCT cust_id FROM CustomerRatedDish AS c WHERE rating < 3 AND "
                         "c.cust_id NOT IN(SELECT cust_id FROM CustomerOrderedDish AS d WHERE c.dish_id  = d.dish_id) AND "
                         "c.dish_id IN (SELECT dish_id FROM RatingDish AS a1 WHERE(SELECT COUNT(*) FROM RatingDish AS a2 WHERE a1.avg_rating > a2.avg_rating ) < 5 ORDER BY DISH_id ASC) "
                         "ORDER BY cust_id ASC")
