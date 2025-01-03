@@ -677,9 +677,10 @@ def get_customers_rated_but_not_ordered() -> List[int]:
         conn = Connector.DBConnector()
         query = sql.SQL("SELECT DISTINCT cust_id FROM CustomerRatedDish AS c WHERE rating < 3 AND "
                         "c.cust_id NOT IN(SELECT cust_id FROM CustomerOrderedDish AS d WHERE c.dish_id  = d.dish_id) AND "
-                        "c.dish_id IN (SELECT dish_id FROM RatingDish AS a1 WHERE(SELECT COUNT(*) FROM RatingDish AS a2 WHERE a1.avg_rating > a2.avg_rating ) < 5 ORDER BY DISH_id ASC) "
+                        "c.dish_id IN (SELECT dish_id FROM RatingDish ORDER BY avg_rating ASC , dish_id ASC LIMIT 5) "
                         "ORDER BY cust_id ASC")
         rows_effected, result = conn.execute(query)
+        print(result)
         customers_bad = []
         for i in range(rows_effected):
             row = result.rows[i]
@@ -691,7 +692,13 @@ def get_customers_rated_but_not_ordered() -> List[int]:
 
 
 def get_non_worth_price_increase() -> List[int]:
-    # TODO: implement
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT DISTINCT dish_id FROM Dihes D WHERE is_active = true AND "
+                        "(SELECT dish_id FROM AverageProfitPerOrderPerPrice WHERE average_price)")
+    finally:
+        conn.close()
     pass
 
 

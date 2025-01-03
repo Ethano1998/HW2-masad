@@ -1030,7 +1030,7 @@ class Test(AbstractTest):
         self.assertEqual(customers_rated_not_ordered,
                          Solution.get_customers_rated_but_not_ordered(), 'test 14.85')
         self.assertEqual(ReturnValue.OK, Solution.customer_rated_dish(3, 7, 1), 'test 14.86')
-        customers_rated_not_ordered = [2, 3]
+        customers_rated_not_ordered = [2,3]
         self.assertEqual(customers_rated_not_ordered,
                          Solution.get_customers_rated_but_not_ordered(), 'test 14.87')
         self.assertEqual(ReturnValue.OK,
