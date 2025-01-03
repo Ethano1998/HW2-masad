@@ -653,7 +653,7 @@ def did_customer_order_top_rated_dishes(cust_id: int) -> bool:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT C.dish_id, TOP.avg_rating "
+        query = sql.SQL("SELECT C.dish_id "
                         "FROM CustomerOrderedDish C, "
                         "(SELECT * FROM RatingDish ORDER BY avg_rating DESC, dish_id LIMIT 5) AS TOP "
                         "WHERE C.cust_id = {cust_id} AND C.dish_id = TOP.dish_id ").format(
