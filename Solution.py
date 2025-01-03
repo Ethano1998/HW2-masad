@@ -39,7 +39,7 @@ def create_tables() -> None:
                      "CHECK ( amount >= 0 ))")
         conn.execute("CREATE TABLE CustomerRatedDish(cust_id INTEGER NOT NULL, dish_id INTEGER NOT NULL, "
                      "rating INTEGER NOT NULL, CHECK ( rating >= 1 ), CHECK ( rating <= 5), "
-                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE SET NULL, "
+                     "FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE CASCADE, "
                      "FOREIGN KEY (dish_id) REFERENCES Dishes(dish_id), "
                      "PRIMARY KEY(cust_id, dish_id))")
         conn.execute("CREATE VIEW OrderTotalPrice AS "
@@ -601,13 +601,32 @@ def get_all_customer_ratings(cust_id: int) -> List[Tuple[int, int]]:
 
 
 def get_order_total_price(order_id: int) -> float:
-    # TODO: implement
-    pass
+    conn= None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT total_price FROM OrderTotalPrice WHERE order_id = {order_id}").format(order_id=sql.Literal(order_id))
+        rows_effected, result = conn.execute(query)
+    finally:
+        conn.close()
+    return float(result.rows[0][0])
 
 
 def get_customers_spent_max_avg_amount_money() -> List[int]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("WITH RECURSIVE avg_total_price AS (SELECT AVG(total_price) AS avg_price , cust_id FROM OrderTotalPrice WHERE cust_id IS NOT NULL GROUP BY cust_id) "
+                        "SELECT DISTINCT cust_id FROM avg_total_price WHERE (SELECT MAX(avg_price) FROM avg_total_price) = avg_price AND cust_id IS NOT NULL ORDER BY cust_id")
+        rows_effected, result = conn.execute(query)
+        customers_best = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            ids = int(row[0])
+            customers_best.append(ids)
+    finally:
+        conn.close()
+    return customers_best
+
 
 
 def get_most_purchased_dish_among_anonymous_order() -> Dish:
@@ -653,8 +672,22 @@ def did_customer_order_top_rated_dishes(cust_id: int) -> bool:
 
 
 def get_customers_rated_but_not_ordered() -> List[int]:
-    # TODO: implement
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT DISTINCT cust_id FROM CustomerRatedDish AS c WHERE dish_id < 3 AND "
+                        "c.cust_id NOT IN(SELECT cust_id FROM CustomerOrderedDish AS d WHERE c.dish_id  = d.dish_id) AND "
+                        "c.dish_id IN (SELECT dish_id FROM RatingDish AS a1 WHERE(SELECT COUNT(*) FROM RatingDish AS a2 WHERE a1.avg_rating > a2.avg_rating ) < 5 ORDER BY DISH_id ASC) "
+                        "ORDER BY cust_id ASC")
+        rows_effected, result = conn.execute(query)
+        customers_bad = []
+        for i in range(rows_effected):
+            row = result.rows[i]
+            ids = int(row[0])
+            customers_bad.append(ids)
+    finally:
+        conn.close()
+    return customers_bad
 
 
 def get_non_worth_price_increase() -> List[int]:
